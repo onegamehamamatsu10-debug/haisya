@@ -1,0 +1,321 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+
+  <title>Unity Web Player | 歯のゲーム</title>
+
+  <link rel="shortcut icon" href="TemplateData/favicon.ico">
+  <link rel="stylesheet" href="TemplateData/style.css">
+</head>
+
+<body>
+
+  <div id="unity-container">
+
+    <div id="unity-fullscreen-container">
+
+      <div id="unity-game-frame">
+
+        <canvas
+          id="unity-canvas"
+          width="1080"
+          height="1920"
+          tabindex="-1"
+        ></canvas>
+
+        <div id="unity-loading-container">
+          <div id="unity-loading-bar">
+            <div id="unity-logo"></div>
+
+            <div id="unity-progress-bar-empty">
+              <div id="unity-progress-bar-full"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div id="unity-warning"></div>
+
+    <div id="unity-footer">
+      <div id="unity-logo-title-footer"></div>
+      <div id="unity-fullscreen-button"></div>
+      <div id="unity-build-title">歯のゲーム</div>
+    </div>
+
+  </div>
+
+  <script>
+
+    const canvas =
+      document.querySelector("#unity-canvas");
+
+    const unityContainer =
+      document.querySelector("#unity-container");
+
+    const fullscreenContainer =
+      document.querySelector("#unity-fullscreen-container");
+
+    const gameFrame =
+      document.querySelector("#unity-game-frame");
+
+    const GAME_WIDTH = 1080;
+    const GAME_HEIGHT = 1920;
+
+    function isFullscreen() {
+      return !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement
+      );
+    }
+
+    function updateGameSize() {
+
+      const fullscreen = isFullscreen();
+
+      let availableWidth;
+      let availableHeight;
+
+      if (fullscreen) {
+
+        availableWidth = window.innerWidth;
+        availableHeight = window.innerHeight;
+
+      } else {
+
+        availableWidth =
+          document.documentElement.clientWidth;
+
+        availableHeight = window.visualViewport
+          ? window.visualViewport.height
+          : window.innerHeight;
+
+      }
+
+      if (
+        availableWidth <= 0 ||
+        availableHeight <= 0
+      ) {
+        return;
+      }
+
+      const scale = Math.min(
+        availableWidth / GAME_WIDTH,
+        availableHeight / GAME_HEIGHT
+      );
+
+      const displayWidth = GAME_WIDTH * scale;
+      const displayHeight = GAME_HEIGHT * scale;
+
+      gameFrame.style.width =
+        displayWidth + "px";
+
+      gameFrame.style.height =
+        displayHeight + "px";
+
+      if (fullscreen) {
+
+        fullscreenContainer.style.width = "100%";
+        fullscreenContainer.style.height = "100%";
+
+      } else {
+
+        fullscreenContainer.style.width =
+          availableWidth + "px";
+
+        fullscreenContainer.style.height =
+          availableHeight + "px";
+
+      }
+
+    }
+
+    window.addEventListener(
+      "resize",
+      updateGameSize
+    );
+
+    window.addEventListener(
+      "orientationchange",
+      updateGameSize
+    );
+
+    if (window.visualViewport) {
+
+      window.visualViewport.addEventListener(
+        "resize",
+        updateGameSize
+      );
+
+    }
+
+    document.addEventListener(
+      "fullscreenchange",
+      updateGameSize
+    );
+
+    document.addEventListener(
+      "webkitfullscreenchange",
+      updateGameSize
+    );
+
+    updateGameSize();
+
+    function unityShowBanner(msg, type) {
+
+      const warningBanner =
+        document.querySelector("#unity-warning");
+
+      function updateBannerVisibility() {
+
+        warningBanner.style.display =
+          warningBanner.children.length
+            ? "block"
+            : "none";
+
+      }
+
+      const div = document.createElement("div");
+
+      div.innerHTML = msg;
+
+      warningBanner.appendChild(div);
+
+      if (type === "error") {
+
+        div.style =
+          "background: red; padding: 10px;";
+
+      } else {
+
+        if (type === "warning") {
+
+          div.style =
+            "background: yellow; padding: 10px;";
+
+        }
+
+        setTimeout(function () {
+
+          if (div.parentNode) {
+            div.parentNode.removeChild(div);
+          }
+
+          updateBannerVisibility();
+
+        }, 5000);
+
+      }
+
+      updateBannerVisibility();
+
+    }
+
+    var buildUrl = "Build";
+
+    var loaderUrl =
+      buildUrl + "/Downloads.loader.js";
+
+    var config = {
+
+      arguments: [],
+
+      dataUrl:
+        buildUrl + "/Downloads.data.unityweb",
+
+      frameworkUrl:
+        buildUrl + "/Downloads.framework.js.unityweb",
+
+      codeUrl:
+        buildUrl + "/Downloads.wasm.unityweb",
+
+      streamingAssetsUrl: "StreamingAssets",
+
+      fullscreenElementID:
+        "unity-fullscreen-container",
+
+      companyName: "DefaultCompany",
+
+      productName: "歯のゲーム",
+
+      productVersion: "1.0",
+
+      showBanner: unityShowBanner
+
+    };
+
+    // Unity標準のCanvas描画サイズ同期を維持。
+    // devicePixelRatioの制限は設定しない。
+    // matchWebGLToCanvasSizeも変更しない。
+
+    var script = document.createElement("script");
+
+    script.src = loaderUrl;
+
+    script.onload = () => {
+
+      const loadingContainer =
+        document.querySelector("#unity-loading-container");
+
+      const progressBarFull =
+        document.querySelector("#unity-progress-bar-full");
+
+      createUnityInstance(
+        canvas,
+        config,
+        (progress) => {
+
+          if (progress < 1) {
+
+            loadingContainer.style.display = "block";
+
+            progressBarFull.style.width =
+              100 * progress + "%";
+
+          } else {
+
+            loadingContainer.style.display = "none";
+
+          }
+
+        }
+
+      ).then((unityInstance) => {
+
+        const fullscreenButton =
+          document.querySelector(
+            "#unity-fullscreen-button"
+          );
+
+        fullscreenButton.onclick = () => {
+
+          unityInstance.SetFullscreen(1);
+
+        };
+
+        updateGameSize();
+
+      }).catch((message) => {
+
+        alert(message);
+
+      });
+
+    };
+
+    document.body.appendChild(script);
+
+  </script>
+
+</body>
+</html>
